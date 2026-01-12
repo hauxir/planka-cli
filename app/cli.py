@@ -13,6 +13,9 @@ console = Console()
 
 def get_client() -> PlankaClient:
     base_url = os.environ.get("PLANKA_URL") or config.get_url()
+    if not base_url:
+        console.print("[red]Error: No Planka URL configured. Run 'planka login' first.[/red]")
+        raise SystemExit(1)
     token = os.environ.get("PLANKA_TOKEN") or config.get_token()
     return PlankaClient(base_url, token)
 
@@ -26,18 +29,33 @@ def main() -> None:
 
 
 @main.command()
-@click.option("--username", "-u", prompt=True, help="Email or username")
-@click.option("--password", "-p", prompt=True, hide_input=True, help="Password")
-@click.option("--url", help="Planka server URL")
-def login(username: str, password: str, url: str | None) -> None:
+@click.option("--url", "-s", help="Planka server URL")
+@click.option("--username", "-u", help="Email or username")
+@click.option("--password", "-p", help="Password", hide_input=True)
+def login(url: str | None, username: str | None, password: str | None) -> None:
     """Login and save credentials."""
-    if url:
-        config.set_url(url)
-    with get_client() as client:
-        token = client.login(username, password)
-        config.set_token(token)
-        console.print(f"[green]Login successful![/green]")
-        console.print(f"Token saved to {config.CONFIG_FILE}")
+    # Prompt for URL if not provided
+    if not url:
+        current_url = config.get_url()
+        if current_url:
+            url = click.prompt("Planka URL", default=current_url)
+        else:
+            url = click.prompt("Planka URL (e.g. https://planka.example.com)")
+    config.set_url(url)
+
+    # Prompt for credentials
+    if not username:
+        username = click.prompt("Username/Email")
+    if not password:
+        password = click.prompt("Password", hide_input=True)
+
+    client = PlankaClient(url)
+    token = client.login(username, password)
+    client.close()
+
+    config.set_token(token)
+    console.print(f"[green]Login successful![/green]")
+    console.print(f"Config saved to {config.CONFIG_FILE}")
 
 
 @main.command()
@@ -51,7 +69,8 @@ def logout() -> None:
 def config_show() -> None:
     """Show current configuration."""
     console.print(f"[bold]Config file:[/bold] {config.CONFIG_FILE}")
-    console.print(f"[bold]URL:[/bold] {config.get_url()}")
+    url = config.get_url()
+    console.print(f"[bold]URL:[/bold] {url or '[dim]not set[/dim]'}")
     token = config.get_token()
     if token:
         console.print(f"[bold]Token:[/bold] {token[:20]}...")

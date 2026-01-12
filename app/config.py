@@ -34,9 +34,9 @@ def set_token(token: str) -> None:
     save_config(config)
 
 
-def get_url() -> str:
-    """Get stored URL or default."""
-    return load_config().get("url", "https://planka.kosmi.io")
+def get_url() -> str | None:
+    """Get stored URL."""
+    return load_config().get("url")
 
 
 def set_url(url: str) -> None:
