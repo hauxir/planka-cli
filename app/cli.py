@@ -5,14 +5,15 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from app import config
 from app.client import PlankaClient
 
 console = Console()
 
 
 def get_client() -> PlankaClient:
-    base_url = os.environ.get("PLANKA_URL", "https://planka.kosmi.io")
-    token = os.environ.get("PLANKA_TOKEN")
+    base_url = os.environ.get("PLANKA_URL") or config.get_url()
+    token = os.environ.get("PLANKA_TOKEN") or config.get_token()
     return PlankaClient(base_url, token)
 
 
@@ -27,13 +28,43 @@ def main() -> None:
 @main.command()
 @click.option("--username", "-u", prompt=True, help="Email or username")
 @click.option("--password", "-p", prompt=True, hide_input=True, help="Password")
-def login(username: str, password: str) -> None:
-    """Login and get an access token."""
+@click.option("--url", help="Planka server URL")
+def login(username: str, password: str, url: str | None) -> None:
+    """Login and save credentials."""
+    if url:
+        config.set_url(url)
     with get_client() as client:
         token = client.login(username, password)
-        console.print("[green]Login successful![/green]")
-        console.print(f"\nSet this environment variable:")
-        console.print(f"[cyan]export PLANKA_TOKEN='{token}'[/cyan]")
+        config.set_token(token)
+        console.print(f"[green]Login successful![/green]")
+        console.print(f"Token saved to {config.CONFIG_FILE}")
+
+
+@main.command()
+def logout() -> None:
+    """Clear saved credentials."""
+    config.clear_config()
+    console.print("[green]Logged out - credentials cleared[/green]")
+
+
+@main.command("config-show")
+def config_show() -> None:
+    """Show current configuration."""
+    console.print(f"[bold]Config file:[/bold] {config.CONFIG_FILE}")
+    console.print(f"[bold]URL:[/bold] {config.get_url()}")
+    token = config.get_token()
+    if token:
+        console.print(f"[bold]Token:[/bold] {token[:20]}...")
+    else:
+        console.print("[bold]Token:[/bold] [dim]not set[/dim]")
+
+
+@main.command("config-set-url")
+@click.argument("url")
+def config_set_url(url: str) -> None:
+    """Set the Planka server URL."""
+    config.set_url(url)
+    console.print(f"[green]URL set to:[/green] {url}")
 
 
 # === Projects ===
