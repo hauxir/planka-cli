@@ -219,10 +219,11 @@ def card(card_id: str) -> None:
 @click.argument("name")
 @click.option("--position", "-p", default=65535.0, help="Position in list")
 @click.option("--description", "-d", help="Card description")
-def card_create(list_id: str, name: str, position: float, description: str | None) -> None:
+@click.option("--type", "-t", "card_type", default="project", help="Card type (project or task)")
+def card_create(list_id: str, name: str, position: float, description: str | None, card_type: str) -> None:
     """Create a new card in a list."""
     with get_client() as client:
-        kwargs: dict[str, Any] = {}
+        kwargs: dict[str, Any] = {"type": card_type}
         if description:
             kwargs["description"] = description
         card_data = client.create_card(list_id, name, position, **kwargs)
