@@ -123,8 +123,11 @@ class PlankaClient:
     def duplicate_card(self, card_id: str, position: float) -> dict[str, Any]:
         return self._post(f"/api/cards/{card_id}/duplicate", {"position": position})["item"]
 
-    def move_card(self, card_id: str, list_id: str, position: float) -> dict[str, Any]:
-        return self.update_card(card_id, listId=list_id, position=position)
+    def move_card(self, card_id: str, list_id: str, position: float, board_id: str | None = None) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {"listId": list_id, "position": position}
+        if board_id:
+            kwargs["boardId"] = board_id
+        return self.update_card(card_id, **kwargs)
 
     # Labels
     def create_label(self, board_id: str, name: str, color: str, position: float) -> dict[str, Any]:

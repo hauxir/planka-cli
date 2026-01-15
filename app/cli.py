@@ -268,11 +268,12 @@ def card_update(
 @main.command("card-move")
 @click.argument("card_id")
 @click.argument("list_id")
+@click.option("--board-id", "-b", help="Board ID (required for cross-board moves)")
 @click.option("--position", "-p", default=65535.0, help="Position in new list")
-def card_move(card_id: str, list_id: str, position: float) -> None:
+def card_move(card_id: str, list_id: str, board_id: str | None, position: float) -> None:
     """Move a card to a different list."""
     with get_client() as client:
-        card_data = client.move_card(card_id, list_id, position)
+        card_data = client.move_card(card_id, list_id, position, board_id)
         console.print(f"[green]Moved card:[/green] {card_data.get('name')}")
 
 
